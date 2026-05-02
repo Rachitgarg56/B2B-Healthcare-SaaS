@@ -1,89 +1,34 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../../lib/firebase';
 import { useAuthStore } from '../../../stores/authStore';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
 import { Activity, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
-
-const DEMO_EMAIL = 'demo@medcare.com';
-const DEMO_PASSWORD = 'Demo@1234';
+import { useLoginForm } from '../hooks/useLoginForm';
+import { AuthBackground } from './AuthBackground';
+import { Input } from '../../../components/ui/Input';
+import { Button } from '../../../components/ui/Button';
 
 export const LoginPage: React.FC = () => {
-  const { user, setUser, setError, error, loading } = useAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const { user, loading } = useAuthStore();
+  const {
+    email,
+    password,
+    showPwd,
+    submitting,
+    fieldErrors,
+    error,
+    handleSubmit,
+    fillDemo,
+    toggleShowPwd,
+    handleEmailChange,
+    handlePasswordChange,
+    DEMO_EMAIL,
+  } = useLoginForm();
 
   if (user && !loading) return <Navigate to="/dashboard" replace />;
 
-  const validate = () => {
-    const errors: typeof fieldErrors = {};
-    if (!email) errors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address';
-    if (!password) errors.password = 'Password is required';
-    else if (password.length < 6) errors.password = 'Password must be at least 6 characters';
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!validate()) return;
-    setSubmitting(true);
-    try {
-      // Try Firebase first; on failure (demo env), simulate login
-      let firebaseUser = null;
-      try {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        firebaseUser = cred.user;
-      } catch (firebaseErr: any) {
-        // Demo mode: accept demo credentials without real Firebase
-        if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-          setUser({ uid: 'demo-uid', email: DEMO_EMAIL, displayName: 'Dr. Admin', photoURL: null });
-          return;
-        }
-        const code = firebaseErr.code;
-        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-          setError('Invalid email or password. Try demo@medcare.com / Demo@1234');
-        } else if (code === 'auth/too-many-requests') {
-          setError('Too many failed attempts. Please try again later.');
-        } else {
-          // Network/config error → use demo mode
-          if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-            setUser({ uid: 'demo-uid', email: DEMO_EMAIL, displayName: 'Dr. Admin', photoURL: null });
-            return;
-          }
-          setError('Login failed. Use demo@medcare.com / Demo@1234 to explore.');
-        }
-        return;
-      }
-      if (firebaseUser) {
-        setUser({ uid: firebaseUser.uid, email: firebaseUser.email, displayName: firebaseUser.displayName, photoURL: firebaseUser.photoURL });
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const fillDemo = () => { setEmail(DEMO_EMAIL); setPassword(DEMO_PASSWORD); setFieldErrors({}); setError(null); };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface-950 via-primary-950 to-surface-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-500/5 rounded-full blur-3xl" />
-      </div>
-
-      {/* Grid pattern */}
-      <div className="absolute inset-0 opacity-5"
-        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+      <AuthBackground />
 
       <div className="w-full max-w-md relative z-10 animate-slide-up">
         {/* Logo */}
@@ -122,37 +67,37 @@ export const LoginPage: React.FC = () => {
           </button>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div className="relative">
+            <div>
               <label className="block text-xs font-medium text-surface-300 mb-1.5">Email address</label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setFieldErrors(p => ({ ...p, email: undefined })); }}
-                  placeholder="you@example.com"
-                  className="w-full h-11 bg-white/5 border border-white/10 hover:border-white/20 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-xl pl-10 pr-4 text-sm text-white placeholder:text-surface-600 outline-none transition-all"
-                />
-              </div>
-              {fieldErrors.email && <p className="mt-1 text-xs text-danger-400">{fieldErrors.email}</p>}
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                placeholder="you@example.com"
+                icon={<Mail size={15} className="text-surface-500" />}
+                error={fieldErrors.email}
+                fullWidth
+                className="h-11 bg-white/5 border-white/10 hover:border-white/20 focus:border-primary-500 focus:ring-primary-500/20 rounded-xl text-white placeholder:text-surface-600"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-surface-300 mb-1.5">Password</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-500" />
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setFieldErrors(p => ({ ...p, password: undefined })); }}
-                  placeholder="••••••••"
-                  className="w-full h-11 bg-white/5 border border-white/10 hover:border-white/20 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-xl pl-10 pr-11 text-sm text-white placeholder:text-surface-600 outline-none transition-all"
-                />
-                <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-surface-500 hover:text-surface-300 transition-colors">
-                  {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-              {fieldErrors.password && <p className="mt-1 text-xs text-danger-400">{fieldErrors.password}</p>}
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                placeholder="••••••••"
+                icon={<Lock size={15} className="text-surface-500" />}
+                iconRight={
+                  <button type="button" onClick={toggleShowPwd} className="text-surface-500 hover:text-surface-300 transition-colors">
+                    {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                }
+                error={fieldErrors.password}
+                fullWidth
+                className="h-11 bg-white/5 border-white/10 hover:border-white/20 focus:border-primary-500 focus:ring-primary-500/20 rounded-xl text-white placeholder:text-surface-600"
+              />
             </div>
 
             {error && (
@@ -162,20 +107,17 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={submitting}
-              className="w-full h-11 mt-1 bg-primary-500 hover:bg-primary-400 active:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-sm transition-all duration-150 flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20"
+              loading={submitting}
+              fullWidth
+              size="lg"
+              iconRight={!submitting && <ArrowRight size={15} />}
+              className="mt-1 bg-primary-500 hover:bg-primary-400 active:bg-primary-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-primary-500/20 border-none"
             >
-              {submitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>Sign in <ArrowRight size={15} /></>
-              )}
-            </button>
+              {submitting ? 'Signing in...' : 'Sign in'}
+            </Button>
           </form>
         </div>
 
