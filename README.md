@@ -128,8 +128,23 @@ Deploy `dist/` to Vercel, Netlify, or any static host.
 - CSS `transition-all` only on interactive elements
 - Avatar fallback avoids broken image flicker
 
+## 🧠 My Approach
+
+- Focused on building a scalable frontend architecture rather than overengineering features
+- Prioritized patient module as the core feature (grid/list toggle, filters, UI clarity)
+- Used mock data to simulate real-world healthcare workflows
+- Avoided adding backend to keep scope focused on frontend quality
+
+## ⚖️ Trade-offs
+
+- Did not implement real backend APIs to keep assignment focused on frontend
+- Service worker uses basic push simulation instead of real push server
+- Micro-frontend architecture skipped due to scope vs value trade-off
+
 ## 📝 Notes
 
 - 48 mock patients generated with realistic Indian names, conditions, vitals
 - All TypeScript interfaces in `src/types/index.ts`
 - Reusable components: Button, Card, Badge, Input, Toggle, Switch, Avatar, Skeleton, EmptyState, StatCard
+- Fully responsive across mobile, tablet, and desktop breakpoints using Tailwind grid system.
+- Zustand was chosen over Redux due to lower boilerplate and sufficient scalability for mid-sized apps.
