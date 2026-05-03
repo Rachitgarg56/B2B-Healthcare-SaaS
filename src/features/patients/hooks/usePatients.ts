@@ -1,5 +1,6 @@
 import { usePatientStore } from '../../../stores/patientStore';
 import { useNotificationStore } from '../../../stores/notificationStore';
+import { useToast } from '../../../components/ui/Toast';
 import { Patient } from '../../../types';
 
 export const usePatients = () => {
@@ -11,6 +12,7 @@ export const usePatients = () => {
   } = usePatientStore();
   
   const { addNotification } = useNotificationStore();
+  const { toast } = useToast();
 
   const filtered = getFilteredPatients();
   const total = patients.length;
@@ -30,6 +32,7 @@ export const usePatients = () => {
     };
     addPatient(newPat);
     addNotification({ title: 'New Patient Added', message: `${newPat.name} has been registered successfully.`, type: 'success' });
+    toast(`${newPat.name} has been added successfully`, 'success');
     
     if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
       navigator.serviceWorker.ready.then(reg => {
